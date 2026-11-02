@@ -5,66 +5,43 @@ flowchart LR
     classDef control  fill:#0EA5E9,stroke:#1E293B,color:#ffffff,stroke-width:1px;
     classDef obs      fill:#CBD5E1,stroke:#1E293B,color:#1E293B,stroke-width:1px;
 
-    Agent(["Agent or MCP client"]):::edge
-    LLM[["LLM provider<br/>Claude or offline fake"]]:::edge
-
-    subgraph Interfaces["Interfaces (bound to one namespace)"]
+    subgraph Interfaces["Interfaces (one namespace)"]
         direction TB
-        MCP["MCP server<br/>remember, recall, forget, list_facts"]:::edge
-        CLI["CLI<br/>add, recall, consolidate, export"]:::edge
+        Agent([Agent or MCP client]):::edge
+        MCP["MCP server<br/>remember, recall, forget"]:::edge
+        CLI["CLI<br/>add, recall, consolidate"]:::edge
         API["AgentMemory facade<br/>Python API"]:::core
+        CLI ~~~ Agent --> MCP --> API
     end
 
-    subgraph Engine["Memory engine (write and read paths)"]
+    subgraph Core["Memory engine"]
         direction TB
-        Extract["Extractor<br/>rules (default) or LLM"]:::core
-        Embed["HashingEmbedder<br/>feature-hashed vectors"]:::core
-        Merge["Merger<br/>reinforce, add, supersede, contest"]:::control
-        Score["Hybrid scorer<br/>lexical, semantic, recency,<br/>importance + explanation"]:::core
-        Settings["MemorySettings<br/>weights, half-life, forgetting"]:::control
+        Extract["Extractor<br/>rules or LLM provider"]:::core
+        Merge["Merger<br/>supersede or contest"]:::control
+        Score["Hybrid scorer<br/>4 weighted signals"]:::core
+        Consolidate["Consolidation<br/>summarize, forget"]:::core
+        Extract --> Merge ~~~ Score ~~~ Consolidate
     end
 
-    subgraph Maintenance["Consolidation (scheduled by caller)"]
-        direction TB
-        Summarize["Summarize old sessions<br/>into summary facts"]:::core
-        Forget["Forget by retention<br/>importance and idle time"]:::control
-    end
-
-    subgraph Storage["SQLite store (namespace on every row)"]
+    subgraph State["SQLite store"]
         direction TB
         Episodic[("Episodic<br/>timestamped turns")]:::data
-        Semantic[("Semantic<br/>facts + superseded history")]:::data
-        Procedural[("Procedural<br/>preferences + provenance")]:::data
-        Index[("FTS5 BM25 index<br/>+ vector table")]:::data
+        Semantic[("Semantic<br/>facts + history")]:::data
+        Procedural[("Procedural<br/>preferences")]:::data
+        Index[("FTS5 index<br/>+ vector table")]:::data
+        Episodic ~~~ Semantic
+        Procedural ~~~ Index
     end
 
-    subgraph Evaluation["Evaluation and outputs"]
+    subgraph Obs["Evaluation and outputs"]
         direction TB
+        Recall["Recalled memories<br/>score breakdown + why"]:::obs
         Harness["Benchmark harness<br/>synthetic dataset"]:::obs
-        Report["results.json and results.md<br/>accuracy and recall@k"]:::obs
+        Report["results.json and .md<br/>accuracy, recall@k"]:::obs
+        Recall ~~~ Harness --> Report
     end
 
-    Agent -->|tool calls| MCP
-    Agent -->|commands| CLI
-    MCP --> API
-    CLI --> API
-    API -->|turn| Extract
-    Extract -.->|prompt| LLM
-    Extract -->|candidate facts| Merge
-    API -->|episode| Embed
-    Embed -->|episode + vector| Episodic
-    Merge --> Semantic
-    Merge --> Procedural
-    API -->|query| Score
-    Index -.->|BM25 + vector candidates| Score
-    Score -->|memories + why| API
-    Settings -.-> Score
-    Settings -.-> Forget
-    API -->|consolidate| Summarize
-    Summarize -.->|reads old turns| Episodic
-    Summarize -->|summary facts| Semantic
-    Summarize --> Forget
-    Forget -->|delete| Episodic
-    Forget -->|prune history| Semantic
-    Harness -->|ingest and recall| API
-    Harness --> Report
+    Interfaces -->|turns, queries| Core
+    Core -->|episodes, facts| State
+    State -.->|BM25 + vector hits| Core
+    Core -->|memories + why| Obs
