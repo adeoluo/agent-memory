@@ -80,7 +80,7 @@ flowchart LR
     Summarize --> Forget --> Episodic
 ```
 
-A rendered copy is in [architecture/architecture.svg](architecture/architecture.svg).
+The README shows a simplified overview rendered from [architecture/architecture.mmd](architecture/architecture.mmd).
 
 ## Modules
 
