@@ -1,0 +1,71 @@
+---
+title: System Architecture - Agent Memory
+config:
+  theme: base
+  themeVariables:
+    fontFamily: "Inter, system-ui, sans-serif"
+    primaryColor: "#F8FAFC"
+    primaryBorderColor: "#1E293B"
+    primaryTextColor: "#1E293B"
+    lineColor: "#64748B"
+    clusterBkg: "#EEF2FF"
+    clusterBorder: "#94A3B8"
+---
+flowchart LR
+    classDef edge     fill:#F59E0B,stroke:#1E293B,color:#1E293B,stroke-width:1px;
+    classDef core     fill:#6366F1,stroke:#1E293B,color:#ffffff,stroke-width:1px;
+    classDef data     fill:#10B981,stroke:#1E293B,color:#ffffff,stroke-width:1px;
+    classDef control  fill:#0EA5E9,stroke:#1E293B,color:#ffffff,stroke-width:1px;
+    classDef danger   fill:#FEE2E2,stroke:#EF4444,color:#1E293B,stroke-width:1px;
+
+    Agent(["Agent or MCP client<br/>(Claude Desktop, VS Code)"]):::edge
+    LLM[["Language model provider<br/>(Claude, or offline fake)"]]:::edge
+
+    subgraph Interfaces["Interfaces (bound to one namespace)"]
+        direction TB
+        API["Python API<br/>AgentMemory"]:::core
+        CLI["CLI<br/>add | recall | consolidate | stats"]:::core
+        MCP["MCP server<br/>remember | recall | forget | list_facts"]:::core
+    end
+
+    subgraph Write["Write path"]
+        direction TB
+        Extract["Extractor<br/>rules (default) or LLM"]:::control
+        Merge["Merge and resolve conflicts<br/>reinforce, add, supersede, contest"]:::control
+    end
+
+    subgraph Read["Read path: hybrid scorer"]
+        direction TB
+        Candidates["Candidates<br/>FTS5 BM25 + vector top-N"]:::core
+        Score["Weighted score<br/>lexical, semantic,<br/>recency, importance<br/>+ explanation"]:::core
+    end
+
+    subgraph Maintenance["Consolidation job"]
+        direction TB
+        Summarize["Summarize old sessions<br/>into semantic facts"]:::core
+        Forget["Forget by decay<br/>importance and idle time"]:::danger
+    end
+
+    subgraph Storage["SQLite (namespace column on every row)"]
+        direction TB
+        Episodic[("Episodic<br/>timestamped turns")]:::data
+        Semantic[("Semantic<br/>facts + superseded history")]:::data
+        Procedural[("Procedural<br/>preferences + provenance")]:::data
+        Index[("FTS5 index<br/>+ vector table")]:::data
+    end
+
+    Agent --> MCP
+    Agent --> API
+    Agent --> CLI
+    Interfaces -->|turn| Extract
+    Extract -.->|prompt| LLM
+    Extract -->|candidate facts| Merge
+    Interfaces -->|episode| Episodic
+    Merge --> Semantic
+    Merge --> Procedural
+    Interfaces -->|query| Candidates
+    Index --> Candidates
+    Candidates --> Score
+    Score -->|memories + why| Interfaces
+    Episodic --> Summarize --> Semantic
+    Summarize --> Forget --> Episodic
