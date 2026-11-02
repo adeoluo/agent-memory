@@ -1,0 +1,46 @@
+# Agent Memory
+
+> Long-term memory for AI agents: episodic, semantic, and procedural memory in SQLite, a write path that extracts and versions facts, a hybrid retriever that explains every result, a consolidation job that summarizes and forgets, and a Model Context Protocol server so it plugs into Claude Desktop or VS Code.
+
+Languages: Python. License: MIT. Source: https://github.com/adeoluo/agent-memory
+
+## Docs
+
+- [README](https://github.com/adeoluo/agent-memory/blob/main/README.md): motivation, architecture, results, quickstart, usage, design decisions, testing, responsible ai, limitations, roadmap
+- [AGENTS.md](https://github.com/adeoluo/agent-memory/blob/main/AGENTS.md): layout, commands and conventions for changing the code
+- [Architecture diagram](https://github.com/adeoluo/agent-memory/blob/main/docs/architecture/architecture.mmd): Mermaid source of the component diagram
+- [Architecture](https://github.com/adeoluo/agent-memory/blob/main/docs/ARCHITECTURE.md)
+- [Data Card: synthetic multi-session dialogue benchmark](https://github.com/adeoluo/agent-memory/blob/main/docs/DATA_CARD.md)
+- [Definition of Done](https://github.com/adeoluo/agent-memory/blob/main/docs/DEFINITION_OF_DONE.md)
+- [Evaluation Report](https://github.com/adeoluo/agent-memory/blob/main/docs/EVALUATION_REPORT.md)
+- [Model Card: extractors and embedder](https://github.com/adeoluo/agent-memory/blob/main/docs/MODEL_CARD.md)
+- [Threat Model](https://github.com/adeoluo/agent-memory/blob/main/docs/THREAT_MODEL.md)
+- [ADR-0001: Record architecture decisions](https://github.com/adeoluo/agent-memory/blob/main/docs/adr/0001-record-architecture-decisions.md)
+- [ADR-0002: Three memory kinds in one SQLite file, namespace on every row](https://github.com/adeoluo/agent-memory/blob/main/docs/adr/0002-memory-model-and-storage.md)
+- [ADR-0003: One additive, explainable retrieval score](https://github.com/adeoluo/agent-memory/blob/main/docs/adr/0003-hybrid-scoring.md)
+- [ADR-0004: Reinforce, add, supersede, or contest; never delete history on write](https://github.com/adeoluo/agent-memory/blob/main/docs/adr/0004-fact-versioning.md)
+- [ADR-0005: Summarize before forgetting; decay by importance and idle time](https://github.com/adeoluo/agent-memory/blob/main/docs/adr/0005-consolidation-and-forgetting.md)
+- [ADR-0006: The MCP server is bound to one namespace at start-up](https://github.com/adeoluo/agent-memory/blob/main/docs/adr/0006-mcp-namespace-binding.md)
+- [ADR-NNNN: <short title>](https://github.com/adeoluo/agent-memory/blob/main/docs/adr/template.md)
+- [Changelog](https://github.com/adeoluo/agent-memory/blob/main/CHANGELOG.md): release history
+
+## Source
+
+- [src/agent_memory/__init__.py](https://github.com/adeoluo/agent-memory/blob/main/src/agent_memory/__init__.py): Long-term memory for AI agents.
+- [src/agent_memory/cli.py](https://github.com/adeoluo/agent-memory/blob/main/src/agent_memory/cli.py): Command-line interface: ``agent-memory add | recall | consolidate | stats | ...
+- [src/agent_memory/consolidation.py](https://github.com/adeoluo/agent-memory/blob/main/src/agent_memory/consolidation.py): Consolidation: summarize old episodes into semantic memory, then forget by decay.
+- [src/agent_memory/embedding.py](https://github.com/adeoluo/agent-memory/blob/main/src/agent_memory/embedding.py): Embedding interface and a deterministic feature-hashing embedder built on numpy.
+- [src/agent_memory/evaluation/__init__.py](https://github.com/adeoluo/agent-memory/blob/main/src/agent_memory/evaluation/__init__.py): Benchmark harness and synthetic dataset.
+- [src/agent_memory/evaluation/dataset.py](https://github.com/adeoluo/agent-memory/blob/main/src/agent_memory/evaluation/dataset.py): Deterministic synthetic multi-session dialogue dataset with temporal ground truth.
+- [src/agent_memory/evaluation/harness.py](https://github.com/adeoluo/agent-memory/blob/main/src/agent_memory/evaluation/harness.py): Benchmark harness: memory conditions, retrieval ablations, and scaling measurements.
+- [src/agent_memory/extraction.py](https://github.com/adeoluo/agent-memory/blob/main/src/agent_memory/extraction.py): Candidate extraction: turn a conversation turn into candidate facts and preferences.
+- [src/agent_memory/fake_provider.py](https://github.com/adeoluo/agent-memory/blob/main/src/agent_memory/fake_provider.py): Deterministic offline provider for tests and continuous integration.
+- [src/agent_memory/mcp_server.py](https://github.com/adeoluo/agent-memory/blob/main/src/agent_memory/mcp_server.py): Model Context Protocol server exposing memory tools to MCP clients.
+- [src/agent_memory/memory.py](https://github.com/adeoluo/agent-memory/blob/main/src/agent_memory/memory.py): The public facade: a namespace-scoped long-term memory for one user or agent.
+- [src/agent_memory/merge.py](https://github.com/adeoluo/agent-memory/blob/main/src/agent_memory/merge.py): Write-path deduplication and conflict resolution for facts and preferences.
+- [src/agent_memory/models.py](https://github.com/adeoluo/agent-memory/blob/main/src/agent_memory/models.py): Typed records for the three memory kinds and for retrieval results.
+- [src/agent_memory/provider.py](https://github.com/adeoluo/agent-memory/blob/main/src/agent_memory/provider.py): Language-model provider interface and a Claude implementation.
+- [src/agent_memory/scoring.py](https://github.com/adeoluo/agent-memory/blob/main/src/agent_memory/scoring.py): The hybrid retrieval score and its per-result explanations.
+- [src/agent_memory/settings.py](https://github.com/adeoluo/agent-memory/blob/main/src/agent_memory/settings.py): Tunable settings for scoring, fact merging, consolidation, and forgetting.
+- [src/agent_memory/store.py](https://github.com/adeoluo/agent-memory/blob/main/src/agent_memory/store.py): SQLite persistence: memories, FTS5 lexical index, vector table, and namespace isolation.
+- [src/agent_memory/text.py](https://github.com/adeoluo/agent-memory/blob/main/src/agent_memory/text.py): Tokenization and normalization shared by extraction, embedding, and lexical search.

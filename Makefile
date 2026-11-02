@@ -1,4 +1,4 @@
-.PHONY: help setup lint format type test coverage evaluation run diagram docker-build docker-up clean all build
+.PHONY: help setup lint format type test coverage evaluation run diagram docker-build docker-up clean all build changelog cut-release
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
@@ -50,3 +50,9 @@ all: lint type coverage ## Full local gate (mirror of continuous integration)
 
 build: ## Build the wheel and source distribution into dist/
 	uv build
+
+changelog: ## Regenerate CHANGELOG.md from Conventional Commits (git-cliff)
+	git cliff --output CHANGELOG.md && perl -0pi -e 's/\n+\z/\n/' CHANGELOG.md
+
+cut-release: ## Cut a release locally: version bump, changelog, tag, GitHub release (RELEASE_VERSION=vX.Y.Z optional)
+	scripts/release.sh $(RELEASE_VERSION)

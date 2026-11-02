@@ -1,18 +1,28 @@
 # Changelog
 
-## v0.1.0 (2026-11-01)
+All notable changes to this project are documented here. The file is generated
+from Conventional Commits by [git-cliff](https://git-cliff.org) when a release is cut
+with `make cut-release`.
 
-First release.
+## Unreleased
 
-- Episodic, semantic, and procedural memory in SQLite with FTS5 and a vector table, isolated by
-  namespace.
-- Write path: deterministic rule extractor, pluggable LLM extractor (Claude provider and an
-  offline fake), fact deduplication and versioning (reinforce, add, supersede, contest).
-- Read path: hybrid score over BM25, hashing-embedding similarity, recency, and importance, with a
-  per-result explanation.
-- Consolidation: extractive session summaries and exponential-decay forgetting.
-- Interfaces: Python API, `agent-memory` command line (`add`, `recall`, `consolidate`, `stats`,
-  `facts`, `forget`, `export`, `import`, `benchmark`), and an MCP server (`agent-memory mcp`) with
-  `remember`, `recall`, `forget`, and `list_facts`.
-- Benchmark harness with a deterministic multi-session dataset, four memory conditions, a
-  scoring-term ablation, development-seed weight tuning, and scaling measurements.
+### Documentation
+
+- Standard README structure and architecture diagram
+- Vertical layered architecture diagram
+- Horizontal layered architecture diagram
+- Compact horizontal architecture diagram
+
+### Build and CI
+
+- Run CodeQL on main and on a weekly schedule only
+
+## [0.1.0] 2026-11-02
+
+### Features
+
+- Long-term memory system for AI agents
+
+### Maintenance
+
+- Initialize repository
