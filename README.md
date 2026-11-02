@@ -306,6 +306,12 @@ The current facts and the store's statistics.
   <img src="docs/demo/facts.gif" alt="The current facts and the store's statistics" width="860">
 </p>
 
+A newer statement supersedes an older fact; the history keeps both, and a memory can be forgotten.
+
+<p align="center">
+  <img src="docs/demo/history.gif" alt="A newer statement supersedes an older fact; the history keeps both, and a memory can be forgotten" width="860">
+</p>
+
 ## Design decisions
 
 - [ADR-0002](docs/adr/0002-memory-model-and-storage.md): three memory kinds in one SQLite file
