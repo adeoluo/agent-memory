@@ -1,25 +1,70 @@
-flowchart LR
-    Client(["Agent or MCP client"])
-    Interfaces["Python API, CLI,<br/>MCP server"]
-    Extractor["Extractor<br/>rules or LLM"]
-    Provider[["LLM provider<br/>optional"]]
-    Merge["Merge and<br/>versioning"]
-    Episodic[("Episodic<br/>turns")]
-    Semantic[("Semantic<br/>facts + history")]
-    Procedural[("Procedural<br/>preferences")]
-    Index[("FTS5 index<br/>vector table")]
-    Scorer["Hybrid scorer<br/>+ explanations"]
-    Consolidation["Consolidation<br/>summarize, forget"]
+flowchart TD
+    classDef edge     fill:#F59E0B,stroke:#1E293B,color:#1E293B,stroke-width:1px;
+    classDef core     fill:#6366F1,stroke:#1E293B,color:#ffffff,stroke-width:1px;
+    classDef data     fill:#10B981,stroke:#1E293B,color:#ffffff,stroke-width:1px;
+    classDef control  fill:#0EA5E9,stroke:#1E293B,color:#ffffff,stroke-width:1px;
+    classDef obs      fill:#CBD5E1,stroke:#1E293B,color:#1E293B,stroke-width:1px;
 
-    Client --> Interfaces
-    Interfaces -->|turn| Extractor
-    Extractor -.-> Provider
-    Extractor --> Merge
-    Interfaces -->|episode| Episodic
+    Agent(["Agent or MCP client"]):::edge
+    LLM[["LLM provider<br/>Claude or offline fake"]]:::edge
+
+    subgraph Interfaces["Interfaces (bound to one namespace)"]
+        direction TB
+        MCP["MCP server<br/>remember, recall, forget, list_facts"]:::edge
+        CLI["CLI<br/>add, recall, consolidate, export"]:::edge
+        API["AgentMemory facade<br/>Python API"]:::core
+    end
+
+    subgraph Engine["Memory engine (write and read paths)"]
+        direction TB
+        Extract["Extractor<br/>rules (default) or LLM"]:::core
+        Embed["HashingEmbedder<br/>feature-hashed vectors"]:::core
+        Merge["Merger<br/>reinforce, add, supersede, contest"]:::control
+        Score["Hybrid scorer<br/>lexical, semantic, recency,<br/>importance + explanation"]:::core
+        Settings["MemorySettings<br/>weights, half-life, forgetting"]:::control
+    end
+
+    subgraph Maintenance["Consolidation (scheduled by caller)"]
+        direction TB
+        Summarize["Summarize old sessions<br/>into summary facts"]:::core
+        Forget["Forget by retention<br/>importance and idle time"]:::control
+    end
+
+    subgraph Storage["SQLite store (namespace on every row)"]
+        direction TB
+        Episodic[("Episodic<br/>timestamped turns")]:::data
+        Semantic[("Semantic<br/>facts + superseded history")]:::data
+        Procedural[("Procedural<br/>preferences + provenance")]:::data
+        Index[("FTS5 BM25 index<br/>+ vector table")]:::data
+    end
+
+    subgraph Evaluation["Evaluation and outputs"]
+        direction TB
+        Harness["Benchmark harness<br/>synthetic dataset"]:::obs
+        Report["results.json and results.md<br/>accuracy and recall@k"]:::obs
+    end
+
+    Agent -->|tool calls| MCP
+    Agent -->|commands| CLI
+    MCP --> API
+    CLI --> API
+    API -->|turn| Extract
+    Extract -.->|prompt| LLM
+    Extract -->|candidate facts| Merge
+    API -->|episode| Embed
+    Embed -->|episode + vector| Episodic
     Merge --> Semantic
     Merge --> Procedural
-    Interfaces -->|query| Scorer
-    Index --> Scorer
-    Scorer -->|memories + why| Interfaces
-    Episodic --> Consolidation
-    Consolidation --> Semantic
+    API -->|query| Score
+    Index -.->|BM25 + vector candidates| Score
+    Score -->|memories + why| API
+    Settings -.-> Score
+    Settings -.-> Forget
+    API -->|consolidate| Summarize
+    Summarize -.->|reads old turns| Episodic
+    Summarize -->|summary facts| Semantic
+    Summarize --> Forget
+    Forget -->|delete| Episodic
+    Forget -->|prune history| Semantic
+    Harness -->|ingest and recall| API
+    Harness --> Report

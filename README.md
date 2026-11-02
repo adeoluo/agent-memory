@@ -43,10 +43,15 @@ window, plus an ablation of every scoring term.
   <img src="docs/architecture/architecture.svg" alt="Architecture diagram" width="860">
 </p>
 
-Every row carries a namespace (one per user or agent) and every query filters on it. A turn is
-stored as an episode and passed to the extractor; candidate facts are merged into versioned
-semantic and procedural memory. Queries are answered by a hybrid scorer over the FTS5 index and the
-vector table, and a consolidation job turns old episodes into summaries and forgets them by decay.
+<sub>Legend: amber = entry points and external systems, indigo = core logic, green = data and state, blue = validation and control, grey = observability and outputs.</sub>
+
+Every row carries a namespace (one per user or agent) and every query filters on it. The MCP
+server and CLI both call the `AgentMemory` facade. A turn is embedded and stored as an episode, and
+the extractor (rules by default, an LLM if configured) proposes facts that the merger reinforces,
+adds, supersedes, or marks contested in semantic and procedural memory. Queries are answered by a
+hybrid scorer over FTS5 and vector candidates that returns each memory with its score breakdown. A
+consolidation pass summarizes old sessions into facts and forgets low-retention episodes and stale
+history, and the benchmark harness drives the same API to produce the published results.
 [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) covers the modules, schema, and data flow; the design
 decisions are recorded as [ADRs](docs/adr/).
 
