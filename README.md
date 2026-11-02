@@ -290,6 +290,22 @@ character trigrams into 256 signed buckets). It is **not** a neural sentence enc
 shared stems and spelling variants, not synonyms. Any object with `embed(text) -> numpy array`
 can replace it.
 
+### Demos
+
+Recorded from real runs with [vhs](https://github.com/charmbracelet/vhs); each tape is in `docs/demo/`.
+
+Facts extracted, a preference superseded, and recall with explanations.
+
+<p align="center">
+  <img src="docs/demo/recall.gif" alt="Facts extracted, a preference superseded, and recall with explanations" width="860">
+</p>
+
+The current facts and the store's statistics.
+
+<p align="center">
+  <img src="docs/demo/facts.gif" alt="The current facts and the store's statistics" width="860">
+</p>
+
 ## Design decisions
 
 - [ADR-0002](docs/adr/0002-memory-model-and-storage.md): three memory kinds in one SQLite file
