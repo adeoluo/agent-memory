@@ -32,7 +32,7 @@ run: ## Serve the Model Context Protocol server on standard input and output
 	uv run agent-memory mcp
 
 diagram: ## Render architecture diagram to SVG
-	mmdc -i docs/architecture/architecture.mmd \
+	npx -y @mermaid-js/mermaid-cli -i docs/architecture/architecture.mmd \
 	     -o docs/architecture/architecture.svg \
 	     -c mermaid.config.json -b transparent
 

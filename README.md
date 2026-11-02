@@ -5,12 +5,10 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/adeoluo/agent-memory/actions/workflows/ci.yml"><img alt="Continuous integration" src="https://github.com/adeoluo/agent-memory/actions/workflows/ci.yml/badge.svg"></a>
-  <a href="https://github.com/adeoluo/agent-memory/releases/latest"><img alt="Release" src="https://img.shields.io/github/v/release/adeoluo/agent-memory"></a>
-  <img alt="Coverage" src="https://img.shields.io/badge/coverage-98%25-brightgreen">
+  <a href="https://github.com/adeoluo/agent-memory/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/adeoluo/agent-memory/actions/workflows/ci.yml/badge.svg"></a>
+  <a href="https://github.com/adeoluo/agent-memory/releases"><img alt="Release" src="https://img.shields.io/github/v/release/adeoluo/agent-memory"></a>
   <img alt="Python" src="https://img.shields.io/badge/python-3.11%20%7C%203.12-blue">
-  <img alt="Type checked" src="https://img.shields.io/badge/mypy-strict-blue">
-  <img alt="License" src="https://img.shields.io/badge/license-MIT-green">
+  <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-green"></a>
 </p>
 
 ---
@@ -42,146 +40,15 @@ window, plus an ablation of every scoring term.
 ## Architecture
 
 <p align="center">
-  <img src="docs/architecture/architecture.svg" alt="System architecture" width="950">
+  <img src="docs/architecture/architecture.svg" alt="Architecture diagram" width="860">
 </p>
 
-| Memory kind | What it holds | Example |
-|---|---|---|
-| **Episodic** | Timestamped turns and events, grouped by session | `"Actually, I switched to Neovim for my editor."` at 2026-06-02 10:14 |
-| **Semantic** | Facts as (subject, predicate, object) with confidence, evidence count, and status (`active`, `superseded`, `contested`) | `(user, prefers:editor, Neovim)`, confidence 0.95, supersedes `Vim` |
-| **Procedural** | Key-value preferences and instructions with provenance | `response_style = bullet points`, "extracted from episode 8 (RuleExtractor)" |
-
-Every row carries a namespace (one per user or agent) and every query filters on it. The design
-decisions are recorded as [ADRs](docs/adr/), and
-[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) walks through the modules, schema, and data flow.
-
-## Install
-
-```bash
-# As a command-line tool, straight from GitHub
-uv tool install git+https://github.com/adeoluo/agent-memory
-
-# Or the wheel attached to the latest release
-pip install https://github.com/adeoluo/agent-memory/releases/download/v0.1.0/agent_memory-0.1.0-py3-none-any.whl
-```
-
-Python 3.11 or newer. Runtime dependencies: `numpy` and the official `mcp` Python SDK.
-
-## Quickstart
-
-### Command line
-
-```console
-$ agent-memory add "My favorite editor is Vim. I live in Lisbon."
-stored episode 1
-  added fact 2
-  added fact 3
-$ agent-memory add "Actually, I switched to Neovim for my editor."
-stored episode 4
-  fact 5 superseded fact 2
-$ agent-memory recall "which editor does the user prefer?" -k 2
-1. [semantic #5] user preference for editor is Neovim
-   score 0.830: semantic fact (active, confidence 0.95); lexical match on 'editor', 'user', 'prefer' (BM25 1.00 of best); embedding similarity 0.55; observed 0.0 days ago (recency 1.00); importance 0.76; largest contribution: lexical (0.40)
-2. [episodic #1] My favorite editor is Vim. I live in Lisbon.
-   score 0.352: episodic memory; lexical match on 'editor' ...
-$ agent-memory facts --history
-#2 [superseded, 0.90] user preference for editor is Vim
-#3 [active, 0.90] user lives in Lisbon
-#5 [active, 0.95] user preference for editor is Neovim
-$ agent-memory consolidate
-$ agent-memory stats
-```
-
-Other commands: `facts`, `forget <id>`, `export <file>`, `import <file>`, `mcp`, and `benchmark`.
-`--database` (default `~/.agent-memory/memory.db`) and `--namespace` (default `default`) select
-the store; both can also be set with `AGENT_MEMORY_DATABASE` and `AGENT_MEMORY_NAMESPACE`.
-
-### Python
-
-```python
-from agent_memory import AgentMemory, ScoringWeights
-
-memory = AgentMemory("memory.db", namespace="alice")
-memory.add_turn("My favorite drink is black coffee.", session_id="monday")
-memory.add_turn("These days my favorite drink is matcha.", session_id="friday")
-
-for hit in memory.recall("what does alice like to drink?", k=3):
-    print(f"{hit.score.total:.2f}", hit.text, "|", hit.explanation)
-
-memory.current_fact("user", "prefers:drink").object  # 'matcha'
-[f.object for f in memory.fact_history("user", "prefers:drink")]  # ['black coffee', 'matcha']
-
-memory.set_preference("response_style", "short answers")
-memory.consolidate()  # summarize old sessions, forget decayed episodes
-memory.export_to("alice.json")  # portable JSON, re-importable into any namespace
-bob = memory.for_namespace("bob")  # same database, strictly isolated namespace
-```
-
-Extraction is pluggable. `RuleExtractor` is the deterministic default; `LLMExtractor` sends the
-turn to any `Provider` and parses a JSON reply. Tests use the offline `FakeProvider`;
-`AnthropicProvider` calls Claude when `ANTHROPIC_API_KEY` is set.
-
-```python
-from agent_memory import AgentMemory, AnthropicProvider, LLMExtractor
-
-memory = AgentMemory("memory.db", namespace="alice", extractor=LLMExtractor(AnthropicProvider()))
-```
-
-### MCP server (Claude Desktop, VS Code)
-
-`agent-memory mcp` serves one namespace over standard input and output with four tools:
-`remember`, `recall`, `forget`, and `list_facts`. The namespace is fixed when the server starts, so
-the connected model cannot read or delete another namespace's memories.
-
-Claude Desktop (`claude_desktop_config.json`):
-
-```json
-{
-  "mcpServers": {
-    "memory": {
-      "command": "uvx",
-      "args": ["--from", "git+https://github.com/adeoluo/agent-memory",
-               "agent-memory", "--namespace", "me", "mcp"]
-    }
-  }
-}
-```
-
-VS Code (`.vscode/mcp.json`), after `uv tool install`:
-
-```json
-{
-  "servers": {
-    "agent-memory": { "type": "stdio", "command": "agent-memory", "args": ["--namespace", "me", "mcp"] }
-  }
-}
-```
-
-## The retrieval score
-
-For a query `q` and a candidate memory `m`, with every term in `[0, 1]`:
-
-```
-score(m, q) = 0.40 * L(m, q) + 0.30 * S(m, q) + 0.15 * R(m) + 0.15 * I(m)
-```
-
-| Term | Definition |
-|---|---|
-| `L` lexical | FTS5 BM25 of `m` for `q`, divided by the best BM25 among this query's candidates |
-| `S` semantic | Cosine similarity of query and memory embeddings, clipped at 0 |
-| `R` recency | `2 ** (-age / half_life)`, age since the evidence was last observed, half-life 30 days |
-| `I` importance | Stored importance (higher for turns that state facts); for facts, times confidence |
-
-Candidates come only from the channels with positive weight (FTS5 for `L`, the vector table for
-`S`), so recency and importance re-rank relevant memories but never surface unrelated ones.
-Superseded and contested facts are excluded unless the caller asks for history. Weights, half-life,
-and candidate pool size are configurable through `MemorySettings`; see
-[ADR-0003](docs/adr/0003-hybrid-scoring.md).
-
-The built-in embedder is a deterministic feature-hashing embedder (word unigrams, bigrams, and
-character trigrams into 256 signed buckets). It is **not** a neural sentence encoder: it captures
-shared stems and spelling variants, not synonyms. Any object with `embed(text) -> numpy array`
-can replace it.
+Every row carries a namespace (one per user or agent) and every query filters on it. A turn is
+stored as an episode and passed to the extractor; candidate facts are merged into versioned
+semantic and procedural memory. Queries are answered by a hybrid scorer over the FTS5 index and the
+vector table, and a consolidation job turns old episodes into summaries and forgets them by decay.
+[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) covers the modules, schema, and data flow; the design
+decisions are recorded as [ADRs](docs/adr/).
 
 ## Results
 
@@ -273,6 +140,151 @@ below 0.05 with a 30-day half-life).
   comparison against other memory products such as Mem0, Zep, or Letta, which have not been
   benchmarked here.
 
+## Quickstart
+
+```bash
+# As a command-line tool, straight from GitHub
+uv tool install git+https://github.com/adeoluo/agent-memory
+
+# Or the wheel attached to the latest release
+pip install https://github.com/adeoluo/agent-memory/releases/download/v0.1.0/agent_memory-0.1.0-py3-none-any.whl
+```
+
+Python 3.11 or newer. Runtime dependencies: `numpy` and the official `mcp` Python SDK.
+
+Store two turns and ask a question:
+
+```console
+$ agent-memory add "My favorite editor is Vim."
+$ agent-memory add "Actually, I switched to Neovim for my editor."
+$ agent-memory recall "which editor does the user prefer?" -k 1
+1. [semantic #4] user preference for editor is Neovim
+```
+
+## Usage
+
+### Command line
+
+```console
+$ agent-memory add "My favorite editor is Vim. I live in Lisbon."
+stored episode 1
+  added fact 2
+  added fact 3
+$ agent-memory add "Actually, I switched to Neovim for my editor."
+stored episode 4
+  fact 5 superseded fact 2
+$ agent-memory recall "which editor does the user prefer?" -k 2
+1. [semantic #5] user preference for editor is Neovim
+   score 0.830: semantic fact (active, confidence 0.95); lexical match on 'editor', 'user', 'prefer' (BM25 1.00 of best); embedding similarity 0.55; observed 0.0 days ago (recency 1.00); importance 0.76; largest contribution: lexical (0.40)
+2. [episodic #1] My favorite editor is Vim. I live in Lisbon.
+   score 0.352: episodic memory; lexical match on 'editor' ...
+$ agent-memory facts --history
+#2 [superseded, 0.90] user preference for editor is Vim
+#3 [active, 0.90] user lives in Lisbon
+#5 [active, 0.95] user preference for editor is Neovim
+$ agent-memory consolidate
+$ agent-memory stats
+```
+
+Other commands: `facts`, `forget <id>`, `export <file>`, `import <file>`, `mcp`, and `benchmark`.
+`--database` (default `~/.agent-memory/memory.db`) and `--namespace` (default `default`) select
+the store; both can also be set with `AGENT_MEMORY_DATABASE` and `AGENT_MEMORY_NAMESPACE`.
+
+### Python API
+
+```python
+from agent_memory import AgentMemory, ScoringWeights
+
+memory = AgentMemory("memory.db", namespace="alice")
+memory.add_turn("My favorite drink is black coffee.", session_id="monday")
+memory.add_turn("These days my favorite drink is matcha.", session_id="friday")
+
+for hit in memory.recall("what does alice like to drink?", k=3):
+    print(f"{hit.score.total:.2f}", hit.text, "|", hit.explanation)
+
+memory.current_fact("user", "prefers:drink").object  # 'matcha'
+[f.object for f in memory.fact_history("user", "prefers:drink")]  # ['black coffee', 'matcha']
+
+memory.set_preference("response_style", "short answers")
+memory.consolidate()  # summarize old sessions, forget decayed episodes
+memory.export_to("alice.json")  # portable JSON, re-importable into any namespace
+bob = memory.for_namespace("bob")  # same database, strictly isolated namespace
+```
+
+Extraction is pluggable. `RuleExtractor` is the deterministic default; `LLMExtractor` sends the
+turn to any `Provider` and parses a JSON reply. Tests use the offline `FakeProvider`;
+`AnthropicProvider` calls Claude when `ANTHROPIC_API_KEY` is set.
+
+```python
+from agent_memory import AgentMemory, AnthropicProvider, LLMExtractor
+
+memory = AgentMemory("memory.db", namespace="alice", extractor=LLMExtractor(AnthropicProvider()))
+```
+
+### MCP server (Claude Desktop, VS Code)
+
+`agent-memory mcp` serves one namespace over standard input and output with four tools:
+`remember`, `recall`, `forget`, and `list_facts`. The namespace is fixed when the server starts, so
+the connected model cannot read or delete another namespace's memories.
+
+Claude Desktop (`claude_desktop_config.json`):
+
+```json
+{
+  "mcpServers": {
+    "memory": {
+      "command": "uvx",
+      "args": ["--from", "git+https://github.com/adeoluo/agent-memory",
+               "agent-memory", "--namespace", "me", "mcp"]
+    }
+  }
+}
+```
+
+VS Code (`.vscode/mcp.json`), after `uv tool install`:
+
+```json
+{
+  "servers": {
+    "agent-memory": { "type": "stdio", "command": "agent-memory", "args": ["--namespace", "me", "mcp"] }
+  }
+}
+```
+
+### Memory kinds
+
+| Memory kind | What it holds | Example |
+|---|---|---|
+| **Episodic** | Timestamped turns and events, grouped by session | `"Actually, I switched to Neovim for my editor."` at 2026-06-02 10:14 |
+| **Semantic** | Facts as (subject, predicate, object) with confidence, evidence count, and status (`active`, `superseded`, `contested`) | `(user, prefers:editor, Neovim)`, confidence 0.95, supersedes `Vim` |
+| **Procedural** | Key-value preferences and instructions with provenance | `response_style = bullet points`, "extracted from episode 8 (RuleExtractor)" |
+
+### Retrieval score and configuration
+
+For a query `q` and a candidate memory `m`, with every term in `[0, 1]`:
+
+```
+score(m, q) = 0.40 * L(m, q) + 0.30 * S(m, q) + 0.15 * R(m) + 0.15 * I(m)
+```
+
+| Term | Definition |
+|---|---|
+| `L` lexical | FTS5 BM25 of `m` for `q`, divided by the best BM25 among this query's candidates |
+| `S` semantic | Cosine similarity of query and memory embeddings, clipped at 0 |
+| `R` recency | `2 ** (-age / half_life)`, age since the evidence was last observed, half-life 30 days |
+| `I` importance | Stored importance (higher for turns that state facts); for facts, times confidence |
+
+Candidates come only from the channels with positive weight (FTS5 for `L`, the vector table for
+`S`), so recency and importance re-rank relevant memories but never surface unrelated ones.
+Superseded and contested facts are excluded unless the caller asks for history. Weights, half-life,
+and candidate pool size are configurable through `MemorySettings`; see
+[ADR-0003](docs/adr/0003-hybrid-scoring.md).
+
+The built-in embedder is a deterministic feature-hashing embedder (word unigrams, bigrams, and
+character trigrams into 256 signed buckets). It is **not** a neural sentence encoder: it captures
+shared stems and spelling variants, not synonyms. Any object with `embed(text) -> numpy array`
+can replace it.
+
 ## Design decisions
 
 - [ADR-0002](docs/adr/0002-memory-model-and-storage.md): three memory kinds in one SQLite file
@@ -283,6 +295,51 @@ below 0.05 with a 30-day half-life).
 - [ADR-0005](docs/adr/0005-consolidation-and-forgetting.md): summarize before forgetting, decay by
   importance and idle time.
 - [ADR-0006](docs/adr/0006-mcp-namespace-binding.md): the MCP server is bound to one namespace.
+
+## Testing
+
+```bash
+make setup      # dependencies and pre-commit hooks
+make all        # ruff format check, ruff lint, mypy strict, pytest with the coverage gate
+uv run pytest   # tests only
+make evaluation # regenerate benchmarks/results.{json,md}
+make build      # wheel and source distribution in dist/
+```
+
+The suite in `tests/` (83 tests, 98% line and branch coverage) covers:
+
+- **Extraction:** every rule pattern, hedge and update confidence, distractors that must not be
+  extracted, the LLM extractor through the offline `FakeProvider`, and malformed model replies.
+- **Storage and isolation:** namespace validation, FTS5 query sanitization, and checks that
+  lexical search, vector search, reads, status updates, access tracking, and deletes never cross
+  namespaces; persistence of a file database.
+- **Merging:** reinforcement, multi-valued predicates, supersession, contested weak evidence,
+  out-of-order evidence, and preference history.
+- **Scoring:** the recency formula, the weighted sum against the explanation, candidate channels,
+  history and kind filters, and access tracking.
+- **Consolidation:** retention decay and access boost, summaries, forgetting only summarized
+  episodes, and optional pruning of fact history.
+- **Interfaces:** the command line end to end, JSON export and import round trips, and the MCP
+  server through an in-process MCP client, including a refused cross-namespace `forget`.
+- **Evaluation:** dataset determinism and ground truth consistency, the reader, the benchmark
+  ordering, and the requirement that tuning seeds are disjoint from test seeds.
+
+Continuous integration runs ruff, mypy strict on `src` and `tests`, and pytest with a 90%
+coverage gate on Python 3.11 and 3.12, then a benchmark smoke run, a wheel install smoke test,
+and a Docker build. CodeQL runs on pushes and pull requests.
+
+## Responsible AI
+
+This project stores personal information and can evaluate and use language-model extraction,
+so its behavior and risks are documented:
+
+- [Model card](docs/MODEL_CARD.md) for the rule extractor, the LLM extractor, and the hashing
+  embedder, including what they miss.
+- [Data card](docs/DATA_CARD.md) for the synthetic benchmark and its biases.
+- [Threat model](docs/THREAT_MODEL.md) for namespace isolation, query injection, stored prompt
+  injection, and data sent to an optional provider.
+- By default nothing leaves the machine. With `LLMExtractor` and a remote provider, each turn is
+  sent to that provider. Users can export and delete their memories (`export`, `forget`).
 
 ## Limitations
 
@@ -304,19 +361,6 @@ below 0.05 with a 30-day half-life).
 - An LLM reader in the benchmark, alongside the deterministic reader.
 - Approximate nearest-neighbor index for very large namespaces.
 
-## Development
-
-```bash
-make setup      # dependencies and pre-commit hooks
-make all        # format check, lint, mypy strict, tests with coverage gate
-make evaluation # regenerate benchmarks/results.{json,md}
-make build      # wheel and source distribution in dist/
-```
-
-Continuous integration runs ruff, mypy strict, and pytest with a 90% coverage gate on Python 3.11
-and 3.12, a benchmark smoke run, a wheel install smoke test, and a Docker build. Each GitHub
-release has the wheel and source distribution attached.
-
 ## License
 
-MIT. See [LICENSE](LICENSE).
+Released under the [MIT License](LICENSE).
