@@ -7,7 +7,7 @@
 <p align="center">
   <a href="https://github.com/adeoluo/agent-memory/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/adeoluo/agent-memory/actions/workflows/ci.yml/badge.svg"></a>
   <a href="https://github.com/adeoluo/agent-memory/releases"><img alt="Release" src="https://img.shields.io/github/v/release/adeoluo/agent-memory"></a>
-  <img alt="Python" src="https://img.shields.io/badge/python-3.11%20%7C%203.12-blue">
+  <img alt="Python" src="https://img.shields.io/badge/python-3.12%20%7C%203.13%20%7C%203.14%20%7C%203.15-blue">
   <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-green"></a>
 </p>
 
@@ -155,7 +155,7 @@ uv tool install git+https://github.com/adeoluo/agent-memory
 pip install https://github.com/adeoluo/agent-memory/releases/download/v0.1.0/agent_memory-0.1.0-py3-none-any.whl
 ```
 
-Python 3.11 or newer. Runtime dependencies: `numpy` and the official `mcp` Python SDK.
+Python 3.12 or newer. Runtime dependencies: `numpy` and the official `mcp` Python SDK.
 
 Store two turns and ask a question:
 
@@ -352,7 +352,7 @@ The suite in `tests/` (83 tests, 98% line and branch coverage) covers:
   ordering, and the requirement that tuning seeds are disjoint from test seeds.
 
 Continuous integration runs ruff, mypy strict on `src` and `tests`, and pytest with a 90%
-coverage gate on Python 3.11 and 3.12, then a benchmark smoke run, a wheel install smoke test,
+coverage gate on Python 3.12, 3.13, 3.14 and 3.15, then a benchmark smoke run, a wheel install smoke test,
 and a Docker build. CodeQL runs on pushes and pull requests.
 
 ## Responsible AI
