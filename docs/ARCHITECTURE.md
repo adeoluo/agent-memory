@@ -40,76 +40,18 @@ embedding. There are no import cycles.
 
 ## Storage schema
 
-```mermaid
-erDiagram
-    memories ||--o| episodes : "kind = episodic"
-    memories ||--o| facts : "kind = semantic"
-    memories ||--o| preferences : "kind = procedural"
-    memories ||--o| vectors : embedding
-    memories ||--|| memories_fts : "FTS5 external content"
-    memories {
-        int id PK
-        text namespace
-        text kind
-        text text
-        real created_at
-        real importance
-        int access_count
-        real last_accessed
-        text status
-    }
-    episodes {
-        int memory_id PK
-        text session_id
-        text role
-        int consolidated
-    }
-    facts {
-        int memory_id PK
-        text subject
-        text predicate
-        text object
-        real confidence
-        real updated_at
-        int evidence_count
-        int superseded_by
-    }
-    preferences {
-        int memory_id PK
-        text key
-        text value
-        text provenance
-        int superseded_by
-    }
-    vectors {
-        int memory_id PK
-        blob embedding
-    }
-```
+<p align="center">
+  <img src="architecture/storage-schema.svg" alt="Storage schema diagram" width="860">
+</p>
 
 Triggers keep `memories_fts` in sync with `memories.text`; detail rows and vectors are removed by
 `ON DELETE CASCADE`.
 
 ## Write path
 
-```mermaid
-sequenceDiagram
-    participant C as Caller
-    participant M as AgentMemory
-    participant X as Extractor
-    participant G as FactMerger
-    participant S as MemoryStore
-    C->>M: add_turn(text, role, session_id)
-    M->>X: extract(text, role)
-    X-->>M: candidate facts and preferences
-    M->>S: insert episode (text, embedding, importance)
-    loop each candidate fact
-        M->>G: merge(candidate, observed_at)
-        G->>S: active facts for (subject, predicate)
-        G->>S: reinforce, add, supersede, or store as history
-    end
-    M-->>C: IngestResult (episode, facts, actions)
-```
+<p align="center">
+  <img src="architecture/write-path.svg" alt="Write path diagram" width="860">
+</p>
 
 ## Read path
 
