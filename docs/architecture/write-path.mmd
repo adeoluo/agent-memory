@@ -1,0 +1,16 @@
+sequenceDiagram
+    participant C as Caller
+    participant M as AgentMemory
+    participant X as Extractor
+    participant G as FactMerger
+    participant S as MemoryStore
+    C->>M: add_turn(text, role, session_id)
+    M->>X: extract(text, role)
+    X-->>M: candidate facts and preferences
+    M->>S: insert episode (text, embedding, importance)
+    loop each candidate fact
+        M->>G: merge(candidate, observed_at)
+        G->>S: active facts for (subject, predicate)
+        G->>S: reinforce, add, supersede, or store as history
+    end
+    M-->>C: IngestResult (episode, facts, actions)
