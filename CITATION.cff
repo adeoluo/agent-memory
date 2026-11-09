@@ -6,8 +6,8 @@ abstract: "Long-term memory for AI agents: episodic, semantic, and procedural me
 authors:
   - family-names: "Ogunnoiki"
     given-names: "Adeolu"
-version: "0.1.0"
-date-released: "2026-11-02"
+version: "0.1.1"
+date-released: "2026-11-09"
 license: MIT
 repository-code: "https://github.com/adeoluo/agent-memory"
 url: "https://github.com/adeoluo/agent-memory"

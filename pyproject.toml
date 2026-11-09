@@ -1,6 +1,6 @@
 [project]
 name = "agent-memory"
-version = "0.1.0"
+version = "0.1.1"
 description = "Long-term memory for AI agents: episodic, semantic, and procedural memory with hybrid retrieval, consolidation, forgetting, and a Model Context Protocol server"
 readme = "README.md"
 requires-python = ">=3.12"

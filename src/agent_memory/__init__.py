@@ -21,7 +21,7 @@ from agent_memory.models import (
 from agent_memory.provider import AnthropicProvider, Provider
 from agent_memory.settings import ForgettingSettings, MemorySettings, ScoringWeights
 
-__version__ = "0.1.0"
+__version__ = "0.1.1"
 
 __all__ = [
     "AgentMemory",
