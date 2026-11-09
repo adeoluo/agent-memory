@@ -31,10 +31,10 @@ evaluation: ## Reproduce the results tables (benchmarks/results.md)
 run: ## Serve the Model Context Protocol server on standard input and output
 	uv run agent-memory mcp
 
-diagram: ## Render architecture diagram to SVG
-	npx -y @mermaid-js/mermaid-cli -i docs/architecture/architecture.mmd \
-	     -o docs/architecture/architecture.svg \
-	     -c mermaid.config.json -b transparent
+diagram: ## Render every diagram in docs/architecture to SVG (house theme, white background)
+	@for f in docs/architecture/*.mmd; do \
+		npx -y @mermaid-js/mermaid-cli -q -i "$$f" -o "$${f%.mmd}.svg" -c mermaid.config.json -b white || exit 1; \
+	done
 
 docker-build: ## Build the image
 	docker build -t agent-memory .

@@ -1,36 +1,26 @@
 # Definition of Done
 
-> Per-project checklist derived from the portfolio-wide standard.
-> A PR is mergeable only when every applicable box is checked.
+A pull request is ready to merge when every item that applies is true. The pull request
+template repeats this list as checkboxes.
 
-## Engineering
-- [x] Core logic built from scratch; frameworks justified in README.
-- [x] Typed, modular, no god-files. ADR added for non-obvious decisions.
+## Code
+- Typed, modular code with tests for every change in behavior; non-obvious design choices
+  are recorded as an ADR in [docs/adr/](adr/).
+- `make all` passes locally and continuous integration is green: format, lint, type check,
+  and tests with coverage at or above the gate set in the project configuration.
 
-## CI/CD
-- [x] `make all` passes locally (format · lint · type · test).
-- [x] CI green on PR; coverage gate 90% (measured 98%).
-- [x] One-command run (`make run` serves MCP) + Docker build works.
-
-## Diagram
-- [x] Architecture diagram present, **centered title**, shared palette, legend.
-- [x] `.mmd` source + rendered `.svg` committed; embedded in README.
+## Results
+- Every number in the README and the docs comes from a committed result file and says how
+  to reproduce it (`make evaluation` or the benchmark script named next to the table), on
+  what hardware, at what data size, and with which seeds or confidence intervals.
 
 ## Documentation
-- [x] README: motivation · diagram · results table · design · limitations · roadmap.
-- [x] Demonstration: command-line transcript in the README.
+- The README keeps the standard section order, and the architecture diagram matches the code.
+- Diagrams are `.mmd` sources in `docs/architecture/`, rendered with `make diagram` (shared
+  theme, white background); Markdown files embed the rendered SVG, never a raw mermaid block.
+- The model card, data card and threat model are current where the project has them.
+- Demo GIFs show the current output.
 
-## Evidence
-- [x] Results table with numbers versus baselines.
-- [x] Multiple seeds + error bars / CI.
-- [x] Reproducible via `make evaluation`; raw numbers in `benchmarks/results.json`.
-
-## Responsible AI
-- [x] Model card, data card, threat model current.
-
-## Security
-- [x] No secrets in history; CodeQL + gitleaks pass.
-
-## Hygiene
-- [x] Conventional commits; LICENSE, CITATION, CONTRIBUTING present.
-- [x] Release v0.1.0 with wheel and source distribution attached.
+## Security and hygiene
+- No secrets in the history; CodeQL passes.
+- The pull request title is a Conventional Commit; it becomes the changelog entry.
