@@ -13,7 +13,7 @@ role: the fact extractors and the embedder.
 - **`LLMExtractor`.** Sends one turn to a `Provider` with a fixed system prompt and parses a JSON
   list of facts and preferences; malformed replies yield an empty extraction and are counted.
   `AnthropicProvider` calls the Claude Messages API (`ANTHROPIC_MODEL`, default
-  `claude-sonnet-4-5`); `FakeProvider` is offline and deterministic for tests.
+  `claude-sonnet-5-5`); `FakeProvider` is offline and deterministic for tests.
 - **`HashingEmbedder`.** Signed feature hashing (BLAKE2b) of word unigrams (weight 1.0), word
   bigrams (0.5), and character trigrams (0.35) into 256 dimensions, L2-normalized.
 

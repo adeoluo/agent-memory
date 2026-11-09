@@ -15,21 +15,21 @@ class Provider(Protocol):
         """Return the model's reply to ``prompt`` under the ``system`` instructions."""
 
 
-class AnthropicProvider:  # pragma: no cover - requires network access and credentials
+class AnthropicProvider:
     """Claude via the Anthropic Messages API, using only the standard library."""
 
     def __init__(
         self,
         model: str | None = None,
         api_key: str | None = None,
-        max_tokens: int = 1024,
+        max_tokens: int = 2048,
         timeout: float = 30.0,
     ) -> None:
         key = api_key or os.environ.get("ANTHROPIC_API_KEY")
         if not key:
             raise RuntimeError("set ANTHROPIC_API_KEY to use the Anthropic provider")
         self.api_key = key
-        self.model = model or os.environ.get("ANTHROPIC_MODEL", "claude-sonnet-4-5")
+        self.model = model or os.environ.get("ANTHROPIC_MODEL", "claude-sonnet-5-5")
         self.max_tokens = max_tokens
         self.timeout = timeout
 
@@ -48,7 +48,8 @@ class AnthropicProvider:  # pragma: no cover - requires network access and crede
             headers={
                 "content-type": "application/json",
                 "x-api-key": self.api_key,
-                "anthropic-version": "2023-06-01",
+                # 2026-10-21 rejects sampling parameters; the body sends none.
+                "anthropic-version": "2026-10-21",
             },
             method="POST",
         )
